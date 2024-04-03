@@ -2,7 +2,7 @@ const express = require('express');
 const fetch = require('fetch');
 
 const app = express();
-const PORT = 3000;
+const port = process.env.PORT || 3000;
 
 // Middleware để xử lý CORS
 app.use((req, res, next) => {
@@ -64,6 +64,6 @@ fetch('https://en.wikipedia.org/w/api.php', {
 });
 
 // Khởi động máy chủ
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
 });
