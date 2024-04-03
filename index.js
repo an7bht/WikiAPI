@@ -13,9 +13,9 @@ app.use((req, res, next) => {
 // Định nghĩa tuyến đường để chuyển tiếp yêu cầu từ máy chủ của bạn đến Wikimedia API
 app.get('/content', async (req, res) => {
     try {
-        // const response = await fetch('https://en.wikipedia.org/w/api.php');
-        // const data = await response.json();
-        // res.json(data);
+        const response = await fetch('https://en.wikipedia.org/w/api.php');
+        const data = await response.json();
+        res.json(data);
         // Lấy nội dung từ Wikimedia API bằng phương thức POST
 fetch('https://en.wikipedia.org/w/api.php', {
     method: 'POST',
