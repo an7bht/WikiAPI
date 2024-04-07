@@ -7,7 +7,7 @@
     "nodemon": "^3.1.0"
   },
   "scripts": {
-    "start": "nodemon post.mjs",
+    "start": "nodemon index.mjs",
     "test": "echo \"Error: no test specified\" && exit 1"
   }
 }
