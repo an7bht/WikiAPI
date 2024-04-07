@@ -139,6 +139,8 @@ app.get('/content', async (req, res) => {
     } catch (error) {
         console.error('Đã có lỗi xảy ra:', error);
     }
+
+    return res.json()
 });
 
 // Khởi động máy chủ
