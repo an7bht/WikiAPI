@@ -13,6 +13,11 @@ app.use((req, res, next) => {
 
 // Định nghĩa tuyến đường để chuyển tiếp yêu cầu từ máy chủ của bạn đến Wikimedia API
 app.get('/content', async (req, res) => {
+    const srsearch = req.query.srsearch;
+    const username = req.query.username;
+    const password = req.query.password;
+    const url_web = req.query.url_web;
+
     try {
 
         async function getAllPageTitles() {
@@ -24,7 +29,7 @@ app.get('/content', async (req, res) => {
                 format: "json",
                 list: "search",
                 //formatversion: "2",
-                srsearch: "fast x"  // Số lượng trang mỗi yêu cầu (giới hạn tối đa)
+                srsearch: srsearch  
             };
 
             let allTitles = [];
@@ -43,8 +48,10 @@ app.get('/content', async (req, res) => {
 
                 if (data.query && data.query.search) {
                     const pages = data.query.search;
+                    res.json({pages})
                     for (const page of pages) {
                         allTitles.push(page.pageid);
+                        
                     }
                 }
 
@@ -59,7 +66,7 @@ app.get('/content', async (req, res) => {
             // Hàm lấy tiêu đề mỗi 5 giây
             async function fetchTitleEvery5Seconds() {
                 if (currentIndex < allTitles.length) {
-                    //console.log("Title:", allTitles[currentIndex++]);
+                    console.log("Title:", allTitles[currentIndex++]);
                     getContentFromPageID(allTitles[currentIndex++]);
                 } else {
                     await fetchNextTitle(); // Lấy thêm tiêu đề nếu đã hết danh sách
@@ -93,7 +100,7 @@ app.get('/content', async (req, res) => {
 
                     if (data.parse.langlinks.length > 0) {
                         console.log(data.parse.title)
-                        PostWordpress(data.parse.title, data.parse.text["*"])
+                        PostWordpress(data.parse.title, data.parse.text["*"], username, password)
                     }
                 })
                 .catch(error => {
@@ -104,18 +111,16 @@ app.get('/content', async (req, res) => {
 
         // ------------------------------------------ WORDPRESS --------------------------------------------------------//
 
-        async function PostWordpress(title, content) {
+        async function PostWordpress(title, content, username, password) {
             // Thông tin đăng nhập WordPress
-            const username = 'an123456';
-            const password = 'an@123456';
             const credentials = Buffer.from(`${username}:${password}`, 'utf-8').toString('base64');
 
             // Thông tin trang web WordPress
-            const wordpressURL = 'https://wiki.bkafoods.com';
+            const wordpressURL = 'https://'+url_web;
             const restAPIPath = '/wp-json/wp/v2/posts';
             // Dữ liệu cho bài viết mới
             const newPostData = {
-                title: "EL "+title,
+                title: "TEST"+ title,
                 content: content,
                 status: 'publish', // Trạng thái bài viết: publish, draft, pending, private
             };
@@ -123,13 +128,13 @@ app.get('/content', async (req, res) => {
                 'Authorization': `Basic ${credentials}`
             };
 
-            // Gửi yêu cầu tạo bài viết mới
-            const createPostResponse = await axios.post(`${wordpressURL}${restAPIPath}`, newPostData, {
-                headers
-            });
+            // // Gửi yêu cầu tạo bài viết mới
+            // const createPostResponse = await axios.post(`${wordpressURL}${restAPIPath}`, newPostData, {
+            //     headers
+            // });
 
-            console.log('New post created:');
-            console.log(createPostResponse.data.id);
+            // console.log('New post created:');
+            // console.log(createPostResponse.data.id);
         }
 
 
@@ -140,7 +145,7 @@ app.get('/content', async (req, res) => {
         console.error('Đã có lỗi xảy ra:', error);
     }
 
-    return res.json()
+    
 });
 
 // Khởi động máy chủ
