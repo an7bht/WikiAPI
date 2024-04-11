@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Read and Select Excel Column</title>
+</head>
+
+<body>
+    <input type="file" id="fileInput" accept=".xlsx">
+    <select id="columnSelect" style="display:none;"></select>
+    <button onclick="callAPIsWithKeys()">POST</button>
+    <div id="output"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.3/xlsx.full.min.js"></script>
+    <script>
+        let excelData = [];
+        const fileInput = document.getElementById('fileInput');
+
+        fileInput.addEventListener("change", handleFiles, false);
+        function handleFiles() {
+            const outputDiv = document.getElementById('output');
+            const file = fileInput.files[0];
+            if (!file) {
+                outputDiv.textContent = 'Please select a file.';
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+
+                const sheetNames = workbook.SheetNames;
+                const firstSheetName = sheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                const columnSelect = document.getElementById('columnSelect');
+                columnSelect.style.display = 'block';
+                columnSelect.innerHTML = jsonData[0].map((column, index) => `<option value="${index}">${column}</option>`).join('');
+                excelData = jsonData;
+            };
+
+            reader.onerror = function (event) {
+                outputDiv.textContent = 'Error reading the file!';
+            };
+
+            reader.readAsArrayBuffer(file);
+        }
+        // ------------------------------- Phần Chạy KEY ---------------------------------------//
+
+        // Khai báo mảng chứa các key
+
+        // Hàm để gọi API và kiểm tra kết quả
+
+        async function callAPI(key) {
+            try {
+                const params = {
+                    username: "wikia",
+                    password: "C(^1g(zZ9yU!uuopBF7EAZtB",
+                    url_web: "wiki.retik.live",
+                    title: key
+                };
+                const url = `http://localhost:3000/content?${new URLSearchParams(params)}`; // Sử dụng key như một tham số trong URL
+                const response = await fetch(url, {
+                    method: 'GET'
+                });
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Error:', error);
+                return { status: 'error', message: error.message };
+            }
+        }
+        var selectedColumnData = [];
+        // Hàm gọi API với các key
+        async function callAPIsWithKeys() {
+            const columnSelect = document.getElementById('columnSelect');
+            const selectedColumnIndex = parseInt(columnSelect.value);
+            selectedColumnData =  excelData.slice(1).map(row => row[selectedColumnIndex]); // Bỏ qua hàng tiêu đề
+
+            console.log("Total: " + selectedColumnData.length)
+
+            for (let i = 0; i < selectedColumnData.length; i++) {
+                const key = getPageTitleFromURL(selectedColumnData[i]);
+                const data = await callAPI(key);
+
+                if (data.status === 'ok') {
+                    console.log('API call successful with key___ ' + (i + 1) + "___: " + key);
+                    // Tiếp tục gọi API với key tiếp theo (nếu có)
+                } else {
+                    console.log('API call failed with key:', key);
+                    break; // Dừng nếu không thành công
+                }
+            }
+            console.log('All keys exhausted or API calls failed.');
+        }
+
+        function getPageTitleFromURL(url) {
+            // Tìm vị trí của dấu gạch chéo cuối cùng trong URL
+            const lastSlashIndex = url.lastIndexOf("/");
+
+            // Cắt lấy phần cuối của URL bắt đầu từ vị trí sau dấu gạch chéo cuối cùng
+            const pageTitleWithEncoding = url.substring(lastSlashIndex + 1);
+
+            // Giải mã phần cuối của URL
+            const decodedPageTitle = decodeURIComponent(pageTitleWithEncoding);
+
+            return decodedPageTitle;
+        }
+
+
+
+
+    </script>
+</body>
+
+</html>

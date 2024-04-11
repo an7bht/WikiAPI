@@ -1,6 +1,7 @@
 import express from 'express';
 import fetch from 'node-fetch';
 import axios from 'axios';
+import cheerio from 'cheerio';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -13,83 +14,53 @@ app.use((req, res, next) => {
 
 // Định nghĩa tuyến đường để chuyển tiếp yêu cầu từ máy chủ của bạn đến Wikimedia API
 app.get('/content', async (req, res) => {
-    const srsearch = req.query.srsearch;
+    const title = req.query.title;
     const username = req.query.username;
     const password = req.query.password;
     const url_web = req.query.url_web;
 
     try {
+        let bienDem = 0;
+        let bienDemS = 0;
 
-        async function getAllPageTitles() {
-            const url = "https://en.wikipedia.org/w/api.php";
+        function getWikipediaSummary() {
+            // Xây dựng URL cho yêu cầu API của Wikipedia
+            const url = `https://fr.wikipedia.org/api/rest_v1/page/summary/${title}`;
 
-            // Tham số truy vấn
-            const params = {
-                action: "query",
-                format: "json",
-                list: "search",
-                //formatversion: "2",
-                srsearch: srsearch  
-            };
-
-            let allTitles = [];
-            let continueParam = null;
-            let currentIndex = 0;
-
-            // Hàm lấy tiêu đề từ danh sách
-            async function fetchNextTitle() {
-                let queryParams = new URLSearchParams(params);
-                if (continueParam) {
-                    queryParams.set('apcontinue', continueParam);
-                }
-
-                const response = await fetch(`${url}?${queryParams}`);
-                const data = await response.json();
-
-                if (data.query && data.query.search) {
-                    const pages = data.query.search;
-                    res.json({pages})
-                    for (const page of pages) {
-                        allTitles.push(page.pageid);
-                        
+            // Gửi yêu cầu GET đến API của Wikipedia sử dụng Fetch API
+            fetch(url)
+                .then(response => {
+                    // Kiểm tra xem yêu cầu có thành công không
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
                     }
-                }
-
-                if (data.continue) {
-                    continueParam = data.continue.apcontinue;
-                } else {
-                    clearInterval(interval); // Dừng interval nếu không có trang nào nữa
-
-                }
-            }
-
-            // Hàm lấy tiêu đề mỗi 5 giây
-            async function fetchTitleEvery5Seconds() {
-                if (currentIndex < allTitles.length) {
-                    console.log("Title:", allTitles[currentIndex++]);
-                    getContentFromPageID(allTitles[currentIndex++]);
-                } else {
-                    await fetchNextTitle(); // Lấy thêm tiêu đề nếu đã hết danh sách
-                }
-
-                if (currentIndex < allTitles.length) {
-                    setTimeout(fetchTitleEvery5Seconds, 200); // Gọi lại hàm sau 5 giây
-                }
-            }
-
-            // Bắt đầu lấy tiêu đề
-            await fetchTitleEvery5Seconds();
+                    // Trả về dữ liệu JSON nếu yêu cầu thành công
+                    return response.json();
+                })
+                .then(data => {
+                    // Kiểm tra xem dữ liệu có chứa pageid không
+                    if (data.pageid) {
+                        console.log("Page ID:", data.pageid);
+                        getContentFromPageID(data.pageid);
+                    } else {
+                        console.log("Page ID not found");
+                    }
+                })
+                .catch(error => {
+                    // Xử lý lỗi ở đây
+                    console.error('There has been a problem with your fetch operation:', error);
+                });
         }
 
-        getAllPageTitles();
-
+        // Gọi hàm với tiêu đề "Ahmed (éléphant)"
+        getWikipediaSummary();
 
 
 
         // ---------------------    Gửi yêu cầu POST đến Wikimedia API để lấy nội dung   ----------------------------------//
-        function getContentFromPageID(id) {
 
-            fetch('https://en.wikipedia.org/w/api.php?action=parse&pageid=' + id + '&format=json')
+        async function getContentFromPageID(id) {
+            fetch('https://fr.wikipedia.org/w/api.php?action=parse&pageid=' + id + '&formatversion=2&format=json')
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('Network response was not ok');
@@ -97,17 +68,26 @@ app.get('/content', async (req, res) => {
                     return response.json();
                 })
                 .then(data => {
-
                     if (data.parse.langlinks.length > 0) {
-                        console.log(data.parse.title)
-                        PostWordpress(data.parse.title, data.parse.text["*"], username, password)
+                        bienDemS++;
+
+                        // Load HTML with cheerio
+                        const $ = cheerio.load(data.parse.text);
+
+                        // Remove elements with class "navbox"
+                        $('.navbox').remove();
+
+                        // Get the modified HTML
+                        const newHtmlString = $.html();
+
+                        // console.log(data.parse.title)
+                        PostWordpress(data.parse.title, newHtmlString, username, password);
                     }
                 })
                 .catch(error => {
                     console.error('There was a problem with the fetch operation:', error);
                 });
         }
-
 
         // ------------------------------------------ WORDPRESS --------------------------------------------------------//
 
@@ -116,11 +96,11 @@ app.get('/content', async (req, res) => {
             const credentials = Buffer.from(`${username}:${password}`, 'utf-8').toString('base64');
 
             // Thông tin trang web WordPress
-            const wordpressURL = 'https://'+url_web;
+            const wordpressURL = 'https://' + url_web;
             const restAPIPath = '/wp-json/wp/v2/posts';
             // Dữ liệu cho bài viết mới
             const newPostData = {
-                title: "TEST"+ title,
+                title: title,
                 content: content,
                 status: 'publish', // Trạng thái bài viết: publish, draft, pending, private
             };
@@ -128,24 +108,28 @@ app.get('/content', async (req, res) => {
                 'Authorization': `Basic ${credentials}`
             };
 
-            // // Gửi yêu cầu tạo bài viết mới
-            // const createPostResponse = await axios.post(`${wordpressURL}${restAPIPath}`, newPostData, {
-            //     headers
-            // });
+            // Gửi yêu cầu tạo bài viết mới
+            const createPostResponse = await axios.post(`${wordpressURL}${restAPIPath}`, newPostData, {
+                headers
+            });
 
-            // console.log('New post created:');
-            // console.log(createPostResponse.data.id);
+            bienDem++
+            console.log('New post created:' + bienDem + "; " + bienDemS);
+            // So sánh "bienDem = bienDemS" thì hoàn thành xong 1 keyword
+            if (bienDem == bienDemS) {
+                console.log("Đã xong 1 key");
+                SendClient();
+
+            }
         }
 
-
-
-
+        function SendClient() {
+            res.json({ status: "ok", text: "Đã đăng: " + bienDem + " bài" })
+        }
 
     } catch (error) {
         console.error('Đã có lỗi xảy ra:', error);
     }
-
-    
 });
 
 // Khởi động máy chủ
