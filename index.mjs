@@ -68,21 +68,25 @@ app.get('/content', async (req, res) => {
                     return response.json();
                 })
                 .then(data => {
-                    if (data.parse.langlinks.length > 0) {
-                        bienDemS++;
+                    // if (data.parse.langlinks.length > 0) {
+                       
+                    // }
+                    
+                    bienDemS++;
+                    // Load HTML with cheerio
+                    const $ = cheerio.load(data.parse.text);
 
-                        // Load HTML with cheerio
-                        const $ = cheerio.load(data.parse.text);
+                    // Remove elements with class "navbox"
+                    $('.navbox').remove();
 
-                        // Remove elements with class "navbox"
-                        $('.navbox').remove();
+                    // Remove href
+                    // $('a[href]').removeAttr('href');
 
-                        // Get the modified HTML
-                        const newHtmlString = $.html();
+                    // Get the modified HTML
+                    const newHtmlString = $.html();
 
-                        // console.log(data.parse.title)
-                        PostWordpress(data.parse.title, newHtmlString, username, password);
-                    }
+                    // console.log(data.parse.title)
+                    PostWordpress(data.parse.title, newHtmlString, username, password);
                 })
                 .catch(error => {
                     console.error('There was a problem with the fetch operation:', error);
