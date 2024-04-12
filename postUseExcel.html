@@ -54,15 +54,16 @@
 
         // Hàm để gọi API và kiểm tra kết quả
 
-        async function callAPI(key) {
+        async function callAPI(url_key) {
             try {
                 const params = {
                     username: "wikia",
                     password: "C(^1g(zZ9yU!uuopBF7EAZtB",
                     url_web: "wiki.retik.live",
-                    title: key
+                    url_key: url_key
                 };
-                const url = `https://wiki-api-omega.vercel.app/content?${new URLSearchParams(params)}`; // Sử dụng key như một tham số trong URL
+                // const url = `https://wiki-api-omega.vercel.app/content?${new URLSearchParams(params)}`; // Sử dụng key như một tham số trong URL
+                const url = `http://localhost:3000/content?${new URLSearchParams(params)}`; // Sử dụng key như một tham số trong URL
                 const response = await fetch(url, {
                     method: 'GET'
                 });
@@ -78,41 +79,24 @@
         async function callAPIsWithKeys() {
             const columnSelect = document.getElementById('columnSelect');
             const selectedColumnIndex = parseInt(columnSelect.value);
-            selectedColumnData =  excelData.slice(1).map(row => row[selectedColumnIndex]); // Bỏ qua hàng tiêu đề
+            selectedColumnData = excelData.slice(1).map(row => row[selectedColumnIndex]); // Bỏ qua hàng tiêu đề
 
             console.log("Total: " + selectedColumnData.length)
 
             for (let i = 0; i < selectedColumnData.length; i++) {
-                const key = getPageTitleFromURL(selectedColumnData[i]);
-                const data = await callAPI(key);
+                const url_key = selectedColumnData[i];
+                const data = await callAPI(url_key);
 
                 if (data.status === 'ok') {
-                    console.log('API call successful with key___ ' + (i + 1) + "___: " + key);
+                    console.log('Successful with key___ ' + (i + 1) + "___: " + url_key);
                     // Tiếp tục gọi API với key tiếp theo (nếu có)
                 } else {
-                    console.log('API call failed with key:', key);
+                    console.log('Failed with key:', url_key);
                     break; // Dừng nếu không thành công
                 }
             }
             console.log('All keys exhausted or API calls failed.');
         }
-
-        function getPageTitleFromURL(url) {
-            // Tìm vị trí của dấu gạch chéo cuối cùng trong URL
-            const lastSlashIndex = url.lastIndexOf("/");
-
-            // Cắt lấy phần cuối của URL bắt đầu từ vị trí sau dấu gạch chéo cuối cùng
-            const pageTitleWithEncoding = url.substring(lastSlashIndex + 1);
-
-            // Giải mã phần cuối của URL
-            //const decodedPageTitle = decodeURIComponent(pageTitleWithEncoding);
-
-            return pageTitleWithEncoding;
-        }
-
-
-
-
     </script>
 </body>
 

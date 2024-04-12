@@ -14,7 +14,7 @@ app.use((req, res, next) => {
 
 // Định nghĩa tuyến đường để chuyển tiếp yêu cầu từ máy chủ của bạn đến Wikimedia API
 app.get('/content', async (req, res) => {
-    const title = req.query.title;
+    const url_key = req.query.url_key;
     const username = req.query.username;
     const password = req.query.password;
     const url_web = req.query.url_web;
@@ -23,7 +23,58 @@ app.get('/content', async (req, res) => {
         let bienDem = 0;
         let bienDemS = 0;
 
-        function getWikipediaSummary() {
+        // ---- Kiểm tra xem url có chuyển hướng hay không -------//
+        async function checkRedirection(url) {
+            try {
+                const response = await axios.head(url, { maxRedirects: 0 });
+                // Check if response has a 'location' header indicating redirection
+                if (response.headers['location']) {
+                    return {
+                        redirected: true,
+                        redirectedUrl: response.headers['location']
+                    };
+                } else {
+                    return {
+                        redirected: false,
+                        redirectedUrl: null
+                    };
+                }
+            } catch (error) {
+                if (error.response.status >= 300 && error.response.status < 400) {
+                    return {
+                        redirected: true,
+                        redirectedUrl: error.response.headers['location']
+                    };
+                } else {
+                    throw error;
+                }
+            }
+        }
+
+        // -------- Lấy kết quả URL mới đã chuyển hướng ---------//
+        checkRedirection(url_key)
+            .then(result => {
+                if (result.redirected) {
+                    // console.log('URL đã chuyển hướng.');
+                    // console.log('URL mới:', result.redirectedUrl);
+                    getWikipediaSummary(getPageTitleFromURL(result.redirectedUrl));
+                } else {
+                    // console.log('URL không chuyển hướng.');
+                    getWikipediaSummary(getPageTitleFromURL(url_key));
+                }
+            })
+            .catch(error => {
+                console.error('Lỗi:', error.message);
+            });
+        function getPageTitleFromURL(url) {
+            // Tìm vị trí của dấu gạch chéo cuối cùng trong URL
+            const lastSlashIndex = url.lastIndexOf("/");
+            // Cắt lấy phần cuối của URL bắt đầu từ vị trí sau dấu gạch chéo cuối cùng
+            const pageTitleWithEncoding = url.substring(lastSlashIndex + 1);
+            return pageTitleWithEncoding;
+        }
+
+        function getWikipediaSummary(title) {
             // Xây dựng URL cho yêu cầu API của Wikipedia
             const url = `https://fr.wikipedia.org/api/rest_v1/page/summary/${title}`;
 
@@ -52,11 +103,6 @@ app.get('/content', async (req, res) => {
                 });
         }
 
-        // Gọi hàm với tiêu đề "Ahmed (éléphant)"
-        getWikipediaSummary();
-
-
-
         // ---------------------    Gửi yêu cầu POST đến Wikimedia API để lấy nội dung   ----------------------------------//
 
         async function getContentFromPageID(id) {
@@ -69,12 +115,12 @@ app.get('/content', async (req, res) => {
                 })
                 .then(data => {
                     // if (data.parse.langlinks.length > 0) {
-                       
+
                     // }
 
                     bienDemS++;
                     // Load HTML with cheerio
-                    const $ = cheerio.load(data.parse.text+"");
+                    const $ = cheerio.load(data.parse.text + "");
 
                     // Remove elements with class "navbox"
                     $('.navbox').remove();
