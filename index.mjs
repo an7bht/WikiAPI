@@ -71,10 +71,10 @@ app.get('/content', async (req, res) => {
                     // if (data.parse.langlinks.length > 0) {
                        
                     // }
-                    
+
                     bienDemS++;
                     // Load HTML with cheerio
-                    const $ = cheerio.load(data.parse.text);
+                    const $ = cheerio.load(data.parse.text+"");
 
                     // Remove elements with class "navbox"
                     $('.navbox').remove();
