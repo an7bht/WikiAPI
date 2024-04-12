@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <script>
+        // Lưu URL hiện tại
+        var currentURL = "https://fr.wikipedia.org/wiki/voy:Namibie";
+
+        // Gửi yêu cầu HTTP đến URL hiện tại
+        fetch(currentURL)
+            .then(response => {
+                // Kiểm tra nếu có chuyển hướng
+                if (response.redirected) {
+                    console.log("URL đã chuyển hướng.");
+                    console.log("URL mới:", response.url);
+                } else {
+                    console.log("URL không chuyển hướng.");
+                }
+            })
+            .catch(error => console.error("Lỗi:", error));
+    </script>
+</body>
+
+</html>
