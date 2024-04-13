@@ -57,16 +57,16 @@
         async function callAPI(url_key) {
             try {
                 const params = {
-                    // username: "wikia",
-                    // password: "C(^1g(zZ9yU!uuopBF7EAZtB",
-                    // url_web: "wiki.retik.live",
-                    username: "an123456",
-                    password: "an@123456",
-                    url_web: "wiki.bkafoods.com",
+                    username: "wikia",
+                    password: "C(^1g(zZ9yU!uuopBF7EAZtB",
+                    url_web: "wiki.retik.live",
+                    // username: "an123456",
+                    // password: "an@123456",
+                    // url_web: "wiki.bkafoods.com",
                     url_key: url_key
                 };
-                //const url = `https://wiki-api-omega.vercel.app/content?${new URLSearchParams(params)}`; // Sử dụng key như một tham số trong URL
-                const url = `http://localhost:3000/content?${new URLSearchParams(params)}`; // Sử dụng key như một tham số trong URL
+                const url = `https://wiki-api-omega.vercel.app/content?${new URLSearchParams(params)}`; // Sử dụng key như một tham số trong URL
+                //const url = `http://localhost:3000/content?${new URLSearchParams(params)}`; // Sử dụng key như một tham số trong URL
                 const response = await fetch(url, {
                     method: 'GET'
                 });
@@ -88,14 +88,27 @@
 
             for (let i = 0; i < selectedColumnData.length; i++) {
                 const url_key = selectedColumnData[i];
-                const data = await callAPI(url_key);
-                if (data.status === 'ok') {
-                    console.log('Successful with key___ ' + (i + 1) + "___: " + url_key);
-                    // Tiếp tục gọi API với key tiếp theo (nếu có)
+                // Kiểm tra xem chuỗi có kết thúc bằng ".jpg" không
+                if (url_key.endsWith(".jpg") || url_key.endsWith(".png") || url_key.endsWith(".jpeg") || url_key.endsWith(".JPG") || url_key.endsWith(".PNG") || url_key.includes("?title=")) {
+                    // console.log("Chuỗi chứa '.jpg'");
                 } else {
-                    console.log('Failed with key___: '+ url_key);
-                    break; // Dừng nếu không thành công
+                    // console.log("Chuỗi không chứa '.jpg'");
+                    const data = await callAPI(url_key);
+                    if (data.status === 'ok') {
+                        console.log('Successful with key___ ' + (i + 1) + "___: " + url_key);
+                        // Tiếp tục gọi API với key tiếp theo (nếu có)
+                    }
+                    else if (data.status === 'error' && data.text === "nexturl") {
+                        console.log('Failed with key___ ' + (i + 1) + "___: " + url_key);
+                        // Tiếp tục gọi API với key tiếp theo (nếu có)
+                    }
+                     else {
+                        console.log('Failed with key___: ' + url_key);
+                        break; // Dừng nếu không thành công
+                    }
                 }
+
+
             }
             console.log('All keys exhausted or API calls failed.');
         }
