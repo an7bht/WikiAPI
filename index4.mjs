@@ -55,46 +55,52 @@ app.get('/content', async (req, res) => {
         checkRedirection(url_key)
             .then(result => {
                 if (result.redirected) {
-                    console.log("Domain: "+result.redirectedUrl.split('/')[2] + "; Titile: "+result.redirectedUrl.split('/')[4]);
-                    getWikipediaTitle(result.redirectedUrl.split('/')[2], result.redirectedUrl.split('/')[4]);
+                    // console.log('URL đã chuyển hướng.');
+                    // console.log('URL mới:', result.redirectedUrl);
+                    //getWikipediaSummary(getPageTitleFromURL(result.redirectedUrl));
+                    console.log("Domain: "+result.redirectedUrl.split('/')[2] + "; Titile: "+result.redirectedUrl.split('/')[4] )
+
                 } else {
-                    console.log("Domain: "+url_key.split('/')[2] + "; Titile: "+url_key.split('/')[4]);
-                    getWikipediaTitle(url_key.split('/')[2], url_key.split('/')[4]);
+                    // console.log('URL không chuyển hướng.');
+                    //getWikipediaSummary(getPageTitleFromURL(url_key));
+                    console.log("Domain: "+url_key.split('/')[2] + "; Titile: "+url_key.split('/')[4] )
                 }
             })
             .catch(error => {
                 console.error('Lỗi:', error.message);
             });
+        function getPageTitleFromURL(url) {
+            // Tìm vị trí của dấu gạch chéo cuối cùng trong URL
+            const lastSlashIndex = url.lastIndexOf("/");
+            const domain_url = url.split('/')[2];
+            // Cắt lấy phần cuối của URL bắt đầu từ vị trí sau dấu gạch chéo cuối cùng
+            const pageTitleWithEncoding = url.substring(lastSlashIndex + 1);
+            return pageTitleWithEncoding;
+        }
 
-        function getWikipediaTitle(domain,title) {
+        function getWikipediaSummary(title) {
             // Xây dựng URL cho yêu cầu API của Wikipedia
-            const url = "https://"+domain+"/w/api.php?action=query&format=json&titles="+title;
+            const url = `https://fr.wikipedia.org/api/rest_v1/page/summary/${title}`;
 
             // Gửi yêu cầu GET đến API của Wikipedia sử dụng Fetch API
             fetch(url)
                 .then(response => {
                     // Kiểm tra xem yêu cầu có thành công không
                     if (!response.ok) {
-                        throw new Error('Network response was not ok');
+                        //throw new Error('Network response was not ok');
+                        console.log("LINK lỗi")
+                        SendClient();
                     }
                     // Trả về dữ liệu JSON nếu yêu cầu thành công
                     return response.json();
                 })
                 .then(data => {
-                    if (data.query && data.query.pages) {
-                        const pages = data.query.pages;
-                        for (const key in pages) {
-                            if (Object.hasOwnProperty.call(pages, key)) {
-                                const page = pages[key];
-                                if (page.pageid !== undefined && page.pageid !== -1) {
-                                    console.log(`Tìm thấy pageid: ${page.pageid}`);
-                                    getContentFromPageID(domain, page.pageid);
-                                    //break;
-                                }
-                            }
-                        }
+                    // Kiểm tra xem dữ liệu có chứa pageid không
+                    if (data.pageid) {
+                        console.log("Page ID:", data.pageid);
+                       // getContentFromPageID(data.pageid);
                     } else {
-                        console.log("Không tìm thấy 'pageid'");
+                        console.log("Page ID not found");
                     }
                 })
                 .catch(error => {
@@ -105,8 +111,8 @@ app.get('/content', async (req, res) => {
 
         // ---------------------    Gửi yêu cầu POST đến Wikimedia API để lấy nội dung   ----------------------------------//
 
-        async function getContentFromPageID(domain, id) {
-            fetch("https://"+domain+"/w/api.php?action=parse&pageid=" + id + "&formatversion=2&format=json")
+        async function getContentFromPageID(id) {
+            fetch('https://fr.wikipedia.org/w/api.php?action=parse&pageid=' + id + '&formatversion=2&format=json')
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('Network response was not ok');

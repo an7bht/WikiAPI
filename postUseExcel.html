@@ -61,9 +61,10 @@
                     password: "C(^1g(zZ9yU!uuopBF7EAZtB",
                     url_web: "wiki.retik.live",
                     url_key: url_key
+                    //url_key: "https://fr.wikipedia.org/wiki/Lucas_Paquet%C3%A1"
                 };
-                // const url = `https://wiki-api-omega.vercel.app/content?${new URLSearchParams(params)}`; // Sử dụng key như một tham số trong URL
-                const url = `http://localhost:3000/content?${new URLSearchParams(params)}`; // Sử dụng key như một tham số trong URL
+                const url = `https://wiki-api-omega.vercel.app/content?${new URLSearchParams(params)}`; // Sử dụng key như một tham số trong URL
+                //const url = `http://localhost:3000/content?${new URLSearchParams(params)}`; // Sử dụng key như một tham số trong URL
                 const response = await fetch(url, {
                     method: 'GET'
                 });
@@ -91,7 +92,7 @@
                     console.log('Successful with key___ ' + (i + 1) + "___: " + url_key);
                     // Tiếp tục gọi API với key tiếp theo (nếu có)
                 } else {
-                    console.log('Failed with key:', url_key);
+                    console.log('Failed with key___: '+ url_key);
                     break; // Dừng nếu không thành công
                 }
             }
