@@ -16,14 +16,11 @@ app.get('/content', async (req, res) => {
         const { url_key, username, password, url_web } = req.query;
         const redirectionResult = await checkRedirection(url_key);
         const { domain, title } = redirectionResult.redirected ? parseURL(redirectionResult.redirectedUrl) : parseURL(url_key);
-
         const [pageId, content] = await Promise.all([
             getWikipediaPageId(domain, title),
             getContentFromPageID(domain, title) // Changed parameter to title
         ]);
-
         await postWordpress(title, content, username, password, url_web);
-
         res.json({ status: "ok", text: "Đã đăng bài" });
     } catch (error) {
         console.error('Đã có lỗi xảy ra:', error);
@@ -59,6 +56,7 @@ function parseURL(url) {
 }
 
 async function getWikipediaPageId(domain, title) {
+    console.log("Domain: "+domain+"; Title: "+ title)
     const url = `https://${domain}/w/api.php?action=query&format=json&titles=${title}`;
     const response = await fetch(url);
     const data = await response.json();
@@ -74,8 +72,8 @@ async function getWikipediaPageId(domain, title) {
     throw new Error("Không tìm thấy 'pageid'");
 }
 
-async function getContentFromPageID(domain, title) {
-    const pageId = await getWikipediaPageId(domain, title);
+async function getContentFromPageID(domain, title) { // Changed parameter to title
+    const pageId = await getWikipediaPageId(domain, title); // Moved here
     const response = await fetch(`https://${domain}/w/api.php?action=parse&pageid=${pageId}&formatversion=2&format=json`);
     const data = await response.json();
     const $ = cheerio.load(data.parse.text);
