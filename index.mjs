@@ -36,7 +36,7 @@ app.get('/content', async (req, res) => {
     } catch (error) {
         // Nếu lỗi xảy ra và status server trả về là 500, trả về thông báo lỗi và URL key tiếp theo
         if (error.response && error.response.status === 500) {
-            res.status(500).json({ status: "error", error: error.message, text:"nexturl" });
+            res.json({ status: "error", error: error.message, text:"nexturl" });
         } else {
             // Xử lý lỗi khác và trả về phản hồi lỗi
             console.error('Đã có lỗi xảy ra:', error);
