@@ -6,31 +6,41 @@ import cheerio from 'cheerio';
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Middleware cho phép CORS
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
     next();
 });
 
+// Tuyến đường để xử lý yêu cầu
 app.get('/content', async (req, res) => {
     try {
+        // Lấy thông tin từ query parameters
         const { url_key, username, password, url_web } = req.query;
+        
+        // Kiểm tra và xử lý chuyển hướng URL
         const redirectionResult = await checkRedirection(url_key);
         const { domain, title } = redirectionResult.redirected ? parseURL(redirectionResult.redirectedUrl) : parseURL(url_key);
 
+        // Sử dụng Promise.all() để thực hiện fetch dữ liệu và xử lý nhanh hơn
         const [pageId, content] = await Promise.all([
             getWikipediaPageId(domain, title),
-            getContentFromPageID(domain, title) // Changed parameter to title
+            getContentFromPageID(domain, title)
         ]);
 
-        await postWordpress(title, content, username, password, url_web);
+        // Gửi dữ liệu đến WordPress
+        await postWordpress(content.title, content.content, username, password, url_web);
 
-        res.json({ status: "ok", text: "Đã đăng bài" });
+        // Trả về phản hồi JSON khi hoàn thành
+        res.json({ status: "ok", text: "Đã đăng bài: "+title });
     } catch (error) {
+        // Xử lý lỗi và trả về phản hồi lỗi
         console.error('Đã có lỗi xảy ra:', error);
         res.status(500).json({ status: "error", error: error.message });
     }
 });
 
+// Hàm kiểm tra và xử lý chuyển hướng URL
 async function checkRedirection(url) {
     try {
         const response = await axios.head(url, { maxRedirects: 0 });
@@ -50,6 +60,7 @@ async function checkRedirection(url) {
     }
 }
 
+// Hàm phân tích URL để lấy domain và title
 function parseURL(url) {
     const urlObject = new URL(url);
     const domain = urlObject.hostname;
@@ -58,6 +69,7 @@ function parseURL(url) {
     return { domain, title };
 }
 
+// Hàm lấy pageId từ Wikipedia API
 async function getWikipediaPageId(domain, title) {
     const url = `https://${domain}/w/api.php?action=query&format=json&titles=${title}`;
     const response = await fetch(url);
@@ -74,15 +86,18 @@ async function getWikipediaPageId(domain, title) {
     throw new Error("Không tìm thấy 'pageid'");
 }
 
+// Hàm lấy nội dung từ pageID của Wikipedia
 async function getContentFromPageID(domain, title) {
     const pageId = await getWikipediaPageId(domain, title);
     const response = await fetch(`https://${domain}/w/api.php?action=parse&pageid=${pageId}&formatversion=2&format=json`);
     const data = await response.json();
+    const pageTitle = data.parse.title; // Lấy tiêu đề từ dữ liệu
     const $ = cheerio.load(data.parse.text);
     $('.navbox').remove();
-    return $.html();
+    return { title: pageTitle, content: $.html() }; // Trả về cả tiêu đề và nội dung
 }
 
+// Hàm gửi dữ liệu đến WordPress
 async function postWordpress(title, content, username, password, url_web) {
     const credentials = Buffer.from(`${username}:${password}`, 'utf-8').toString('base64');
     const wordpressURL = `https://${url_web}/wp-json/wp/v2/posts`;
@@ -95,6 +110,7 @@ async function postWordpress(title, content, username, password, url_web) {
     await axios.post(wordpressURL, newPostData, { headers });
 }
 
+// Lắng nghe cổng và bắt đầu server
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });

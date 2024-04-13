@@ -65,8 +65,8 @@
                     url_web: "wiki.bkafoods.com",
                     url_key: url_key
                 };
-                const url = `https://wiki-api-omega.vercel.app/content?${new URLSearchParams(params)}`; // Sử dụng key như một tham số trong URL
-                //const url = `http://localhost:3000/content?${new URLSearchParams(params)}`; // Sử dụng key như một tham số trong URL
+                //const url = `https://wiki-api-omega.vercel.app/content?${new URLSearchParams(params)}`; // Sử dụng key như một tham số trong URL
+                const url = `http://localhost:3000/content?${new URLSearchParams(params)}`; // Sử dụng key như một tham số trong URL
                 const response = await fetch(url, {
                     method: 'GET'
                 });
