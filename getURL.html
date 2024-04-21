@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Display URLs</title>
+</head>
+<body>
+    <h1>Display URLs</h1>
+    <button onclick="getURLs()">Get URLs</button>
+    <div id="urlList"></div>
+
+    <script>
+        async function getURLs() {
+            try {
+                const response = await fetch('http://localhost:3000/getAllUrl');
+                const reader = response.body.getReader();
+                
+                const urlList = document.getElementById('urlList');
+                urlList.innerHTML = '<h2>URLs:</h2>';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const urls = new TextDecoder().decode(value);
+                    const ul = document.createElement('ul');
+                    urls.split('\n').forEach(url => {
+                        const li = document.createElement('li');
+                        li.textContent = url;
+                        ul.appendChild(li);
+                    });
+                    urlList.appendChild(ul);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+    </script>
+</body>
+</html>
