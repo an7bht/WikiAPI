@@ -1,5 +1,5 @@
 {
-  "main": "getAllUrl.mjs",
+  "main": "index.mjs",
   "dependencies": {
     "axios": "^1.6.8",
     "cheerio": "^1.0.0-rc.12",
@@ -10,7 +10,7 @@
     "nodemon": "^3.1.0"
   },
   "scripts": {
-    "start": "nodemon getAllUrl.mjs",
+    "start": "nodemon index.mjs",
     "test": "echo \"Error: no test specified\" && exit 1"
   }
 }
