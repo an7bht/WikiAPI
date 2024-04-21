@@ -13,25 +13,23 @@
     <script>
         async function getURLs() {
             try {
-                // const response = await fetch('http://localhost:3000/getAllUrl');
                 const response = await fetch('https://wiki-api-omega.vercel.app/getAllUrl');
-                const reader = response.body.getReader();
+                const data = await response.json();
                 
-                const urlList = document.getElementById('urlList');
-                urlList.innerHTML = '<h2>URLs:</h2>';
-
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
-
-                    const urls = new TextDecoder().decode(value);
+                if (data.status === 'ok') {
+                    const urlList = document.getElementById('urlList');
+                    urlList.innerHTML = '<h2>URLs:</h2>';
+                    
                     const ul = document.createElement('ul');
-                    urls.split('\n').forEach(url => {
+                    data.urls.forEach(url => {
                         const li = document.createElement('li');
                         li.textContent = url;
                         ul.appendChild(li);
                     });
+                    
                     urlList.appendChild(ul);
+                } else {
+                    console.error('Error:', data.error);
                 }
             } catch (error) {
                 console.error('Error:', error);
