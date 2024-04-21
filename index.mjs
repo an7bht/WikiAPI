@@ -4,6 +4,13 @@ import axios from 'axios';
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Middleware cho phép CORS
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    next();
+});
+
+
 // Thông tin xác thực
 const username = 'wikia';
 const password = 'C(^1g(zZ9yU!uuopBF7EAZtB';
